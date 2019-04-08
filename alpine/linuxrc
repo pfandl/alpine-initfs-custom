@@ -1,0 +1,39 @@
+#!/bin/sh
+
+mount -t devtmpfs none /dev
+mount -t proc none /proc
+mount -t sysfs none /sys
+echo 0 > /proc/sys/kernel/printk
+
+udevd &
+udevadm trigger --action=add
+udevadm settle
+
+#ifconfig eth0 up
+#udhcpc -t 5 -q -s /bin/simple.script
+
+DEV=/dev/sda
+
+if [ -d /sys/firmware/efi ]; then
+  echo detected UEFI
+
+  #sgdisk -i 0 $DEV | grep GUID > /dev/null || {
+    #curl -L http://10.0.0.2/ubuntu.img.gz | gunzip > $DEV
+  #}
+else
+  echo detected BIOS
+
+  #sgdisk -i 0 $DEV | grep GUID > /dev/null || {
+  #  curl -L http://10.0.0.2/ubuntu.img.gz | gunzip > $DEV
+  #}
+fi
+
+#setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+
+echo b > /proc/sysrq-trigger
+
+mount -o ro /dev/sda2 /mnt
+mount --move /proc /mnt/proc
+mount --move /sys /mnt/sys
+mount --move /dev /mnt/dev
+exec switch_root /mnt /sbin/init
